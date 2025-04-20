@@ -7,32 +7,52 @@ import StockTable, { Stock } from "@/app/components/StockTable";
 export default function FavoritesPage() {
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [favorites, setFavorites] = useState<string[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        // 전체 종목 로드
         fetch("/api/stocks")
-            .then((res) => res.json())
-            .then((data: Stock[]) => setStocks(data));
+            .then(res => res.json())
+            .then((data) => {
+                if (Array.isArray(data)) {
+                    setStocks(data);
+                } else if (Array.isArray((data as any).stocks)) {
+                    setStocks((data as any).stocks);
+                } else {
+                    console.error("Unexpected /api/stocks response:", data);
+                    setStocks([]);
+                }
+            });
 
-        // 로컬스토리지에서 즐겨찾기 불러오기
         const saved = localStorage.getItem("favorites");
         if (saved) setFavorites(JSON.parse(saved));
     }, []);
 
     const toggleFavorite = (symbol: string) => {
-        const newFav = favorites.includes(symbol)
-            ? favorites.filter((s) => s !== symbol)
+        const next = favorites.includes(symbol)
+            ? favorites.filter(s => s !== symbol)
             : [...favorites, symbol];
-        setFavorites(newFav);
-        localStorage.setItem("favorites", JSON.stringify(newFav));
+        setFavorites(next);
+        localStorage.setItem("favorites", JSON.stringify(next));
     };
 
-    // 즐겨찾기된 종목만 필터링
-    const filtered = stocks.filter((s) => favorites.includes(s.symbol));
+    const filtered = stocks
+        .filter(s => favorites.includes(s.symbol))
+        .filter(
+            s =>
+                s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                s.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
     return (
         <div className="p-6 max-w-5xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6">자주 찾는 종목</h1>
+            <h1 className="text-2xl font-bold mb-4">자주 찾는 종목</h1>
+            <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="종목명 또는 심볼 검색"
+                className="w-full border rounded px-3 py-2 mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
             <StockTable
                 stocks={filtered}
                 favorites={favorites}
