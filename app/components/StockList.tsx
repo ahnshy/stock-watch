@@ -1,46 +1,43 @@
-"use client";
+// app/components/StockList.tsx
+import React from "react";
+import type { Stock } from "./StockTable";
 
-import { useEffect, useState } from "react";
+interface StockListProps {
+    stocks: Stock[];
+    favorites: string[];
+    onToggleFavorite: (symbol: string) => void;
+}
 
 export default function StockList({
+                                      stocks,
+                                      favorites,
                                       onToggleFavorite,
-                                      favorites = [],
-                                  }: {
-    onToggleFavorite?: (symbol: string) => void;
-    favorites?: string[];
-}) {
-    const [stocks, setStocks] = useState<any[]>([]);
-
-    useEffect(() => {
-        fetch("/api/stocks")
-            .then((res) => res.json())
-            .then(setStocks);
-    }, []);
-
+                                  }: StockListProps) {
     return (
-        <div className="space-y-4">
-            {stocks.map((stock) => (
-                <div
-                    key={stock.symbol}
-                    className="flex justify-between items-center border-b pb-2"
-                >
-                    <div>
-                        <div className="font-bold">{stock.name}</div>
-                        <div className="text-sm text-gray-500">{stock.symbol}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="text-lg font-semibold">{stock.price.toLocaleString()}원</div>
-                        {onToggleFavorite && (
-                            <button
-                                onClick={() => onToggleFavorite(stock.symbol)}
-                                className="text-sm text-blue-500"
-                            >
-                                {favorites.includes(stock.symbol) ? "★" : "☆"}
-                            </button>
-                        )}
-                    </div>
-                </div>
+        <ul>
+            {stocks.map((stock: Stock) => (
+                <li key={stock.symbol} className="flex items-center space-x-2 py-2">
+                    <button
+                        onClick={() => onToggleFavorite(stock.symbol)}
+                        aria-label={
+                            favorites.includes(stock.symbol)
+                                ? "Remove from favorites"
+                                : "Add to favorites"
+                        }
+                    >
+                        {favorites.includes(stock.symbol) ? "★" : "☆"}
+                    </button>
+                    <span className="flex-1">
+            {stock.name}{" "}
+                        <span className="font-mono text-gray-500 text-sm">
+              ({stock.symbol})
+            </span>
+          </span>
+                    <span className="font-semibold">
+            {stock.price > 0 ? `${stock.price.toLocaleString()}원` : "–"}
+          </span>
+                </li>
             ))}
-        </div>
+        </ul>
     );
 }
