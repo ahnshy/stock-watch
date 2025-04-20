@@ -15,7 +15,6 @@ interface Stock {
     history: PricePoint[];
 }
 
-// 가격 추이를 보여주는 간단한 차트 컴포넌트
 function StockTrendChart({ history }: { history: PricePoint[] }) {
     return (
         <ResponsiveContainer width={100} height={40}>
