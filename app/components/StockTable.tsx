@@ -8,7 +8,7 @@ interface PricePoint {
     price: number;
 }
 
-interface Stock {
+export interface Stock {
     symbol: string;
     name: string;
     price: number;
