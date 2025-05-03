@@ -1,67 +1,36 @@
 // app/api/stocks/route.ts
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-const FINNHUB_BASE = "https://finnhub.io/api/v1";
+export async function GET(req: Request) {
+    const { searchParams } = new URL(req.url);
+    const keyword = searchParams.get("search")?.trim();
+    if (!keyword) return NextResponse.json([]);
 
-export async function GET(request: NextRequest) {
-    try {
-        const apiKey = process.env.FINNHUB_API_KEY;
-        if (!apiKey) {
-            console.warn("FINNHUB_API_KEY is not set; returning mock data.");
-            return NextResponse.json([]);
-        }
+    const urls = [
+        "https://m.stock.naver.com/api/json/sise/siseListJson.nhn?menu=market_sum&sosok=0&pageSize=1000&page=1",
+        "https://m.stock.naver.com/api/json/sise/siseListJson.nhn?menu=market_sum&sosok=1&pageSize=1000&page=1",
+    ];
 
-        const { searchParams } = new URL(request.url);
-        const query = searchParams.get("search")?.trim() || "";
-        if (!query) {
-            // 검색어가 없으면 빈 배열 반환
-            return NextResponse.json([]);
-        }
+    const [resKpi, resKdq] = await Promise.all(urls.map((u) => fetch(u)));
+    const [rawKpi, rawKdq] = await Promise.all([resKpi.json(), resKdq.json()]);
 
-        const searchUrl = `${FINNHUB_BASE}/search?q=${encodeURIComponent(query)}&token=${apiKey}`;
-        const searchRes = await fetch(searchUrl);
-        const searchJson = await searchRes.json();
-        const candidates: { symbol: string; description: string }[] = searchJson.result || [];
+    // rawKpi/result 객체 안에 itemList 배열이 있는 경우 꺼내고, 그렇지 않으면 rawKpi 자체가 배열이라고 간주
+    const listKpi = Array.isArray(rawKpi)
+        ? rawKpi
+        : (rawKpi as any).result?.itemList ?? [];
+    const listKdq = Array.isArray(rawKdq)
+        ? rawKdq
+        : (rawKdq as any).result?.itemList ?? [];
 
-        const limited = candidates.slice(0, 10);
-        const now = Math.floor(Date.now() / 1000);
-        const oneDayAgo = now - 24 * 60 * 60;
+    const suggestions = [...listKpi, ...listKdq]
+        .filter((item: any) => item.nm.includes(keyword) || item.cd.includes(keyword))
+        .slice(0, 5)
+        .map((item: any) => ({
+            symbol: item.cd,
+            name: item.nm,
+            price: item.nv,
+            history: [] as { time: string; price: number }[],
+        }));
 
-        const results = await Promise.all(
-            limited.map(async ({ symbol, description }) => {
-                const [quoteRes, candleRes] = await Promise.all([
-                    fetch(`${FINNHUB_BASE}/quote?symbol=${symbol}&token=${apiKey}`),
-                    fetch(
-                        `${FINNHUB_BASE}/stock/candle?symbol=${symbol}&resolution=60&from=${oneDayAgo}&to=${now}&token=${apiKey}`
-                    ),
-                ]);
-                const quote = await quoteRes.json();
-                const candle = await candleRes.json();
-
-                const history =
-                    candle.t && candle.c
-                        ? candle.t.map((t: number, i: number) => ({
-                            date: new Date(t * 1000).toLocaleTimeString("ko-KR", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                            }),
-                            price: candle.c[i],
-                        }))
-                        : [];
-
-                return {
-                    symbol,
-                    name: description,
-                    price: quote.c ?? 0,
-                    history,
-                };
-            })
-        );
-
-        return NextResponse.json(results);
-    } catch (err) {
-        console.error("API Error : ", err);
-        return NextResponse.json([]);
-    }
+    return NextResponse.json(suggestions);
 }
