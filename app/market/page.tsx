@@ -10,7 +10,7 @@ export default function MarketPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [suggestions, setSuggestions] = useState<Stock[]>([]);
     const wrapperRef = useRef<HTMLDivElement>(null);
-    
+
     useEffect(() => {
         const fetchSuggestions = async () => {
             const q = searchTerm.trim();
