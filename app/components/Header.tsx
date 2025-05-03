@@ -11,25 +11,32 @@ export default function Header() {
             {status === "loading" ? (
                 <span>로딩중...</span>
             ) : session ? (
-                <>
-                    <span>{session.user?.name} 님</span>
-                    <button
-                        onClick={() => signOut()}
-                        className="btn px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-                    >
-                        로그아웃
-                    </button>
-                </>
+                <button
+                    onClick={() => signOut()}
+                    className="cursor-pointer"
+                >
+                    <img
+                        src={session.user?.image ?? "/default-profile.png"}
+                        alt={session.user?.name ?? "Profile"}
+                        className="h-10 w-10 rounded-full object-cover hover:ring-2 hover:ring-gray-400 transition"
+                    />
+                </button>
             ) : (
                 <button
                     onClick={() => signIn("google")}
-                    className="btn-primary flex items-center px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                    className="
+            cursor-pointer
+            flex items-center
+            px-4 py-2 rounded
+            bg-black hover:bg-gray-800
+            text-white
+            transition-colors duration-200
+          "
                 >
-                    {/* 로고에 cursor-pointer 클래스만 주면 hover 시 포인터로 변합니다 */}
                     <img
                         src="/google_login_logo.svg"
                         alt="Google logo"
-                        className="h-5 w-5 mr-2 cursor-pointer"
+                        className="h-5 w-5 mr-2"
                     />
                     Google 로그인
                 </button>
