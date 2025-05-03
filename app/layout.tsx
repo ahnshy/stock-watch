@@ -1,5 +1,8 @@
 // app/layout.tsx
+//import { NextUIProvider } from "@nextui-org/react";
 import { NextUIProvider } from "@nextui-org/react";
+import { SessionProvider } from "next-auth/react";
+import { Providers } from "./providers";
 import "./globals.css";
 
 export default function RootLayout({
@@ -10,7 +13,7 @@ export default function RootLayout({
     return (
         <html lang="en">
         <body>
-        <NextUIProvider>{children}</NextUIProvider>
+        <Providers>{children}</Providers>
         </body>
         </html>
     );
