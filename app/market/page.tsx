@@ -10,7 +10,7 @@ export default function MarketPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [suggestions, setSuggestions] = useState<Stock[]>([]);
     const wrapperRef = useRef<HTMLDivElement>(null);
-
+    
     useEffect(() => {
         const fetchSuggestions = async () => {
             const q = searchTerm.trim();
@@ -21,7 +21,7 @@ export default function MarketPage() {
             try {
                 const res = await fetch(`/api/stocks?search=${encodeURIComponent(q)}`);
                 const data: Stock[] = await res.json();
-                setSuggestions(data.slice(0, 5)); // 상위 5개만
+                setSuggestions(data.slice(0, 5)); // 상위 5개만 표시
             } catch (err) {
                 console.error(err);
                 setSuggestions([]);
@@ -70,15 +70,21 @@ export default function MarketPage() {
                 />
 
                 {suggestions.length > 0 && (
-                    <ul className="absolute z-10 mt-1 w-full bg-white text-black border rounded shadow-lg max-h-60 overflow-auto dark:bg-gray-800 dark:text-white">
+                    <ul className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 overflow-auto dark:bg-gray-800 dark:text-white">
                         {suggestions.map((s) => (
                             <li
                                 key={s.symbol}
                                 onClick={() => handleSelect(s)}
-                                className="px-3 py-2 cursor-pointer text-black hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                                className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
-                                {s.name} (<span className="font-mono">{s.symbol}</span>) —{" "}
-                                <span className="font-semibold">{s.price.toLocaleString()}</span>원
+                                {s.name}{" "}
+                                <span className="font-mono text-gray-500 text-sm">
+                                    ({s.symbol})
+                                </span>{" "}
+                                —{" "}
+                                <span className="font-semibold">
+                                    {s.price.toLocaleString()}원
+                                </span>
                             </li>
                         ))}
                     </ul>
