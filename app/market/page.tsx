@@ -2,9 +2,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import StockTable, { Stock } from "@/app/components/StockTable";
 
 export default function MarketPage() {
+    const { data: session, status } = useSession();
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [favorites, setFavorites] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -21,9 +23,8 @@ export default function MarketPage() {
             try {
                 const res = await fetch(`/api/stocks?search=${encodeURIComponent(q)}`);
                 const data: Stock[] = await res.json();
-                setSuggestions(data.slice(0, 5)); // 상위 5개만 표시
-            } catch (err) {
-                console.error(err);
+                setSuggestions(data.slice(0, 5));
+            } catch {
                 setSuggestions([]);
             }
         };
@@ -78,13 +79,8 @@ export default function MarketPage() {
                                 className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
                                 {s.name}{" "}
-                                <span className="font-mono text-gray-500 text-sm">
-                                    ({s.symbol})
-                                </span>{" "}
-                                —{" "}
-                                <span className="font-semibold">
-                                    {s.price.toLocaleString()}원
-                                </span>
+                                <span className="font-mono text-gray-500 text-sm">({s.symbol})</span>{" "}
+                                — <span className="font-semibold">{s.price.toLocaleString()}원</span>
                             </li>
                         ))}
                     </ul>
@@ -93,8 +89,9 @@ export default function MarketPage() {
 
             <StockTable
                 stocks={stocks}
-                favorites={favorites}
-                onToggleFavorite={toggleFavorite}
+                // 로그인된 경우에만 즐겨찾기 기능 활성화
+                favorites={session ? favorites : undefined}
+                onToggleFavorite={session ? toggleFavorite : undefined}
             />
         </div>
     );
