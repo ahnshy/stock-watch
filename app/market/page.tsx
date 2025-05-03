@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import StockTable, { Stock } from "@/app/components/StockTable";
 
 export default function MarketPage() {
-    const { data: session, status } = useSession();
+    const { data: session } = useSession();
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [favorites, setFavorites] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -14,41 +14,33 @@ export default function MarketPage() {
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const fetchSuggestions = async () => {
-            const q = searchTerm.trim();
-            if (!q) {
-                setSuggestions([]);
-                return;
-            }
-            try {
-                const res = await fetch(`/api/stocks?search=${encodeURIComponent(q)}`);
-                const data: Stock[] = await res.json();
-                setSuggestions(data.slice(0, 5));
-            } catch {
-                setSuggestions([]);
-            }
-        };
-        fetchSuggestions();
+        if (!searchTerm.trim()) {
+            setSuggestions([]);
+            return;
+        }
+        fetch(`/api/stocks?search=${encodeURIComponent(searchTerm)}`)
+            .then((r) => r.json())
+            .then((data: Stock[]) => setSuggestions(data.slice(0, 5)))
+            .catch(() => setSuggestions([]));
     }, [searchTerm]);
 
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
+        const handler = (e: MouseEvent) => {
             if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
                 setSuggestions([]);
             }
         };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
-    };
-
-    const handleSelect = (stock: Stock) => {
+    const handleSelect = async (stock: Stock) => {
         setSearchTerm(stock.symbol);
         setSuggestions([]);
-        setStocks([stock]);
+
+        const res = await fetch(`/api/stock-quote?symbol=${stock.symbol}`);
+        const { price } = await res.json();
+        setStocks([{ ...stock, price }]);
     };
 
     const toggleFavorite = (symbol: string) => {
@@ -65,7 +57,7 @@ export default function MarketPage() {
                 <input
                     type="text"
                     value={searchTerm}
-                    onChange={handleInputChange}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="종목명 또는 심볼 검색"
                     className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -76,11 +68,22 @@ export default function MarketPage() {
                             <li
                                 key={s.symbol}
                                 onClick={() => handleSelect(s)}
-                                className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                className="
+                  cursor-pointer px-3 py-2
+                  transition-colors duration-150
+                  hover:bg-[#2DB400] hover:text-white
+                  dark:hover:bg-[#2DB400] dark:hover:text-white
+                "
+                                style={{ backgroundClip: "padding-box" }}
                             >
                                 {s.name}{" "}
-                                <span className="font-mono text-gray-500 text-sm">({s.symbol})</span>{" "}
-                                — <span className="font-semibold">{s.price.toLocaleString()}원</span>
+                                <span className="font-mono text-gray-500 text-sm">
+                  ({s.symbol})
+                </span>{" "}
+                                —{" "}
+                                <span className="font-semibold">
+                  {s.price.toLocaleString()}원
+                </span>
                             </li>
                         ))}
                     </ul>
@@ -89,7 +92,6 @@ export default function MarketPage() {
 
             <StockTable
                 stocks={stocks}
-                // 로그인된 경우에만 즐겨찾기 기능 활성화
                 favorites={session ? favorites : undefined}
                 onToggleFavorite={session ? toggleFavorite : undefined}
             />
